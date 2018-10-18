@@ -1,0 +1,12 @@
+{
+    "name": "bluesalt-labs/text-to-speech-generator",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Luke Sontrop",
+            "email": "luke@bluesaltlabs.com"
+        }
+    ],
+    "require": {}
+}
