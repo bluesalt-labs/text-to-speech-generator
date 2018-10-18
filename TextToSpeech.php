@@ -20,6 +20,33 @@ class TextToSpeech
         $this->initPolly();
     }
 
+    public function sendRequest($text, $voiceKey) {
+        $response       = null;
+        $requestData    = null;
+        $processedText  = $this->processRawText($text);
+        $voice          = $this->getVoiceNameByKey($voiceKey);
+        $format         = $this->settings['audio_format'];
+
+        if($processedText && $voice && $format) {
+            $requestData = [
+                'Text'          => '<speak>'.$text.'</speak>',
+                'OutputFormat'  => $format,
+                'TextType'      => 'ssml',
+                'VoiceId'       => $voice,
+            ];
+        }
+
+        if($requestData) {
+            $response = $this->polly->synthesizeSpeech($requestData);
+            $filename = $this->getAudioOutputFilepath();
+            file_put_contents($filename, $response['AudioStream']);
+
+            return $filename;
+        }
+
+        return null;
+    }
+
     private function initPolly() {
         try {
             $this->polly = new PollyClient(  $this->getPollyConfig() );
@@ -28,6 +55,19 @@ class TextToSpeech
             var_dump($e);
             exit;
         }
+    }
+
+    private function getAudioOutputFilepath() {
+        $date       = new DateTime();
+        $basePath   = DOCROOT.$this->settings['cache_paths']['audio']; // todo: different output?
+        $timestamp  = $date->format('YmdHis');
+        $extension  = $this->settings['audio_format'];
+
+        if($basePath && $timestamp && $extension) {
+            return $basePath.$timestamp.'_output.'.$extension;
+        }
+
+        return null;
     }
 
     private function getPollyConfig() {
@@ -41,11 +81,22 @@ class TextToSpeech
         ];
     }
 
+    private function getVoiceNameByKey($voiceKey) {
+        if( array_key_exists($voiceKey, $this->settings['voices']) ) {
+            return $this->settings['voices'][$voiceKey];
+        }
+
+        return null;
+    }
+
+    private function processRawText($text) {
+        // todo
+        return $text;
+    }
+
     private static function getSettings($key = null) {
         $settings = [
-            'audio_format'  => [
-                'mp3'   => 'audio/mpeg',
-            ],
+            'audio_format'  => 'mp3',
             'cache_paths'   => [
                 'text'  => 'cache/text/',
                 'audio' => 'cache/audio/',
