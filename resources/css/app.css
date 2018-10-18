@@ -182,21 +182,39 @@ textarea.v-resize, textarea.y-resize { resize: vertical; }
     border-radius: 6px;
 }
 
-button:hover,
-button:active,
-button:focus,
-.input-container input:active,
-.input-container input:focus,
-.input-container textarea:active,
-.input-container textarea:focus,
-.input-container select:active,
-.input-container select:focus {
+button:hover:not(:disabled),
+button:active:not(:disabled),
+button:focus:not(:disabled),
+input:active:not(:disabled),
+input:focus:not(:disabled),
+textarea:active:not(:disabled),
+textarea:focus:not(:disabled),
+select:active:not(:disabled),
+select:focus:not(:disabled) {
     border-color:  #82878f;
     outline: 1px solid #989da5;
     box-shadow: 0 0 0.25pt 0.5pt #989da5;
 }
 
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+    background-color: #82878f;
+    color: #a3b6be;
+    cursor:default;
+}
+
+button.error,
+input.error,
+textarea.error,
+select.error {
+    border-color: #984B43;
+}
+
 
 .monospace { font-family: "Lucida Console", Monaco, monospace; }
+
+.bold { font-weight: bold; }
 
 /* End Components */

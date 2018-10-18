@@ -45,12 +45,18 @@ $app = new Main( $_SERVER['REQUEST_METHOD'], $_REQUEST);
                         <select id="voice" name="voice">
                             <option value="">Select...</option>
                             <?foreach($app->getVoices() as $key => $voice):?>
-                            <option value="<?=$key?>"><?=$voice['name']?></option>
+                            <option value="<?=$key?>">
+                                <?=$voice['preferred'] ?  '*' : '' ?>
+                                <?=$voice['name']?> |
+                                <?=$voice['language']?>
+                                <?=$voice['gender'] === 'm' ? ' | Male' : '' ?>
+                                <?=$voice['gender'] === 'f' ? ' | Female' : '' ?>
+                            </option>
                             <?endforeach;?>
                         </select>
                     </div>
 
-                    <button type="button" class="btn-lg">Generate</button>
+                    <button type="button" class="btn-lg" id="generate_audio_button">Generate</button>
                 </form>
 
                 <div class="container-half">

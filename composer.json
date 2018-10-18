@@ -8,5 +8,7 @@
             "email": "luke@bluesaltlabs.com"
         }
     ],
-    "require": {}
+    "require": {
+        "aws/aws-sdk-php": "^3.69"
+    }
 }
