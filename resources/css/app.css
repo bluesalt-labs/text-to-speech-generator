@@ -81,6 +81,9 @@ html, body, .main-container {
     height: 40px;
     background: #2d364b;
 }
+#header > div {
+    line-height: 40px;
+}
 
 #content {
     flex: 1;
@@ -100,6 +103,22 @@ html, body, .main-container {
     margin: 0 15px;
 }
 
+.container-half {
+    float:left;
+    width: 50%;
+    padding: 0 15px;
+}
+
+.container-full {
+    float:left;
+    width:100%;
+    padding: 0 15px;
+}
+
+.container:after {
+    clear:both;
+}
+
 hr { border: 0.5px solid #778991; }
 
 table {
@@ -111,12 +130,34 @@ table th, table td { padding: 5px 10px; }
 table, table th, table td { border: 1px solid #778991; }
 table > thead > tr { border-bottom: 2px solid #778991; }
 
-input, textarea, select {
+input, textarea, select, button {
     border: 1px solid #778991;
     background-color: #151d2b;
     color: #a3b6be;
     box-shadow:none;
     outline:none;
+}
+
+button {
+    padding: 3px 6px;
+    /*
+    -webkit-transition: background-color 100ms, border-color 100ms, color 100ms;
+    transition: background-color 100ms, border-color 100ms, color 100ms;
+    */
+}
+
+button:hover,
+button:active,
+button:focus {
+    padding: 3px 6px;
+    background-color: #778991;
+    color: #151d2b;
+    cursor: pointer;
+}
+
+button.btn-lg {
+    font-size: 1.1em;
+    padding: 5px 10px;
 }
 
 textarea { resize: both; }
@@ -141,6 +182,9 @@ textarea.v-resize, textarea.y-resize { resize: vertical; }
     border-radius: 6px;
 }
 
+button:hover,
+button:active,
+button:focus,
 .input-container input:active,
 .input-container input:focus,
 .input-container textarea:active,
