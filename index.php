@@ -64,7 +64,7 @@ $app = new Main();
                     <button type="button" class="btn-lg" id="generate_audio_button">Submit</button>
                 </form>
 
-                <div class="container-half">
+                <div class="container-half hide-small">
                     <h2>Dictionary Replacements</h2>
                     <table>
                         <thead>
