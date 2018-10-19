@@ -22,6 +22,10 @@ function onGenerateButtonClick(e) {
         voice.disabled = true;
 
         btn.innerText = "Generating...";
+
+
+
+        // todo: send to Main::sendPolyRequest()
     } else {
         if(!txt.value) { txt.className = 'error'; }
         if(!voice.value) { voice.className = 'error'; }

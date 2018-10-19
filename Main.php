@@ -33,6 +33,29 @@ class Main
 
     }
 
+
+    public function sendPolyRequest($request) {
+        $response = [
+            'success'       => false,
+            'audio_path'    => null,
+            'messages'      => [],
+        ];
+
+        $text   = $request['text_content']; // todo
+        $voice  = $request['voice'];        // todo
+
+        $polyResponse = $this->tts->sendRequest($text, $voice);
+
+        if($polyResponse) {
+            $response['success'] = true;
+            // todo
+            $response['audio_path'] = $polyResponse;
+        }
+
+        return json_encode($response);
+        //exit( json_encode($response) ); // ?
+    }
+
     public function getVoices() {
         return TextToSpeech::getVoices();
     }
