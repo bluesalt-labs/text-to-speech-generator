@@ -29,7 +29,7 @@ class TextToSpeech
 
         if($processedText && $voice && $format) {
             $requestData = [
-                'Text'          => '<speak>'.$text.'</speak>',
+                'Text'          => '<speak>'.$processedText.'</speak>',
                 'OutputFormat'  => $format,
                 'TextType'      => 'ssml',
                 'VoiceId'       => $voice,
@@ -38,13 +38,22 @@ class TextToSpeech
 
         if($requestData) {
             $response = $this->polly->synthesizeSpeech($requestData);
-            $filename = $this->getAudioOutputFilepath();
-            file_put_contents($filename, $response['AudioStream']);
+            $fileInfo = $this->getAudioOutputFileInfo();
+            $success = file_put_contents($fileInfo['path'], $response['AudioStream']);
 
-            return $filename;
+            return [
+                "success"   => $success,
+                "path"      => $fileInfo['path'],
+                "name"      => $fileInfo['name'],
+            ];
         }
 
-        return null;
+        // todo: DRY
+        return [
+            "success"   => false,
+            "path"      => null,
+            "name"      => null,
+        ];
     }
 
     private function initPolly() {
@@ -57,17 +66,26 @@ class TextToSpeech
         }
     }
 
-    private function getAudioOutputFilepath() {
+    private function getAudioOutputFileInfo() {
         $date       = new \DateTime();
-        $basePath   = DOCROOT.$this->settings['cache_paths']['audio']; // todo: different output?
+        $basePath   = $this->settings['cache_paths']['audio']; // todo: different output?
         $timestamp  = $date->format('YmdHis');
         $extension  = $this->settings['audio_format'];
+        $fullPath   = null;
+
+
+        $output = [
+            'path'  => null,
+            'name'  => null
+        ];
 
         if($basePath && $timestamp && $extension) {
-            return $basePath.$timestamp.'_output.'.$extension;
+            $filename = $timestamp.'_output.'.$extension;
+            $output['path'] = $basePath.$filename;
+            $output['name'] = $filename;
         }
 
-        return null;
+        return $output;
     }
 
     private function getPollyConfig() {
@@ -90,8 +108,14 @@ class TextToSpeech
     }
 
     private function processRawText($text) {
-        // todo
-        return $text;
+        $cleanString = $text;
+
+        foreach($this->settings['ssml'] as $acronym => $replacement) {
+            $cleanString = str_replace($acronym, $replacement, $cleanString);
+
+        }
+
+        return $cleanString;
     }
 
     private static function getSettings($key = null) {
@@ -107,7 +131,8 @@ class TextToSpeech
                 ")</s>."        => ')</s>',
                 ")</s>;"        => ')</s>',
                 ")</s>:"        => ')</s>',
-                "EPPP"          => '<say-as interpret-as="character">EPPP</say-as>',
+                "EPPP"          => 'E Triple P',
+                "CPLEE"         => 'See Plea',
                 "DSM-IV"        => '<say-as interpret-as="character">DSM</say-as> 4',
                 "DSM-5"         => '<say-as interpret-as="character">DSM</say-as> 5',
                 "APA"           => '<say-as interpret-as="character">APA</say-as>',

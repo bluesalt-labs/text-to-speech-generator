@@ -83,10 +83,9 @@ $app = new Main();
             <div class="container">
                 <div class="container-full">
                     <br />
-                    <hr />
-                    <p>test 2</p>
-
-
+                    <div id="form_output_container">
+                        <!-- todo: show existing audio files on page load -->
+                    </div>
                 </div>
 
             </div>

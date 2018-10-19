@@ -10,7 +10,8 @@
                 form:   'text_content_form',
                 text:   'text_content',
                 voice:  'voice',
-                submit: 'generate_audio_button'
+                submit: 'generate_audio_button',
+                output: 'form_output_container'
             },
             inputClasses: {
                 default:    '',
@@ -29,7 +30,8 @@
                 form:   null,
                 text:   null,
                 voice:  null,
-                submit: null
+                submit: null,
+                output: null
             },
             data: {
                 submit: {
@@ -39,7 +41,8 @@
                 return: {
                     messages:   [],
                     success:    false,
-                    audioUrl:   null
+                    audioPath:  null,
+                    audioName:  null
                 }
             }
         };
@@ -81,10 +84,44 @@
             if(xhr.status === 200) {
                 TTS.cache.data.return.messages  = xhr.response.messages;
                 TTS.cache.data.return.success   = xhr.response.success;
-                TTS.cache.data.return.audioUrl = xhr.response.audio_path;
+                TTS.cache.data.return.audioPath = xhr.response.audio_path;
+                TTS.cache.data.return.audioName = xhr.response.audio_name;
             } else {
                 // todo: on submit error
             }
+
+            outputRequestResponse();
+        }
+
+        function outputRequestResponse() {
+            var outputHtml = "";
+
+            var success = TTS.cache.data.return.success;
+            var msgs    = TTS.cache.data.return.messages;
+            var url     = TTS.cache.data.return.audioPath;
+            var name    = TTS.cache.data.return.audioName;
+
+            // Show success or fail
+            getOutputElement().className = ( success ? getElementSuccessClass() : getElementErrorClass() );
+
+            // Show messages
+            if(msgs.length > 0) {
+                for(var i in msgs) {
+                    outputHtml += "<span>"+ msgs[i] +"</span><br />";
+                }
+            }
+
+            // show audio url if available
+            if(url) {
+                outputHtml += "<hr><a href='" + url +"' target='_blank'>"+ name +"</a><br />"
+
+                outputHtml += "<audio class='audio-player' controls>" +
+                    "<source src='" + url + "' type='audio/mpeg'>" +
+                    "Your browser does not support the audio element." +
+                    "</audio><br />";
+            }
+
+            getOutputElement().innerHTML += outputHtml;
         }
 
         function getTTSFormRequestData(refresh = true) {
@@ -131,6 +168,14 @@
             }
 
             return TTS.cache.elements.submit;
+        }
+
+        function getOutputElement() {
+            if(!TTS.cache.elements.output) {
+                TTS.cache.elements.output = document.getElementById(TTS.defaults.elementIDs.output);
+            }
+
+            return TTS.cache.elements.output;
         }
 
         // Get form input values
@@ -211,52 +256,3 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('generate_audio_button').onclick = TTS.onGenerateButtonClick;
 
 });
-
-
-function onGenerateButtonClick(e) {
-
-
-    //var btn     = e.target;
-
-
-    if( validateForm(e.target) ) {
-
-    }
-
-    txt.className = '';
-    voice.className = '';
-
-    if(txt.value && voice.value) {
-
-        btn.disabled = true;
-        txt.disabled = true;
-        voice.disabled = true;
-
-        btn.innerText = "Generating...";
-
-        sendPolyRequest(txt, voice);
-
-        // todo: send to Main::sendPolyRequest()
-    } else {
-        if(!txt.value) { txt.className = 'error'; }
-        if(!voice.value) { voice.className = 'error'; }
-    }
-
-
-
-
-}
-
-
-function validateForm(submitBtn) {
-    var txt     = document.getElementById('text_content');
-    var voice   = document.getElementById('voice');
-}
-
-function sendPolyRequest(text, voiceKey) {
-
-}
-
-function polyRequestCallback(status, response) {
-
-}

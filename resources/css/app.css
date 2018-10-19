@@ -119,6 +119,21 @@ html, body, .main-container {
     clear:both;
 }
 
+a {
+    color: #546e9b;
+    text-decoration: none;
+}
+
+a:hover,
+a:active,
+a:focus {
+    color: #738dc3;
+}
+
+a:visited {
+    color: #617b8c;
+}
+
 hr { border: 0.5px solid #778991; }
 
 table {
@@ -225,3 +240,8 @@ select.success {
 .bold { font-weight: bold; }
 
 /* End Components */
+
+
+.audio-player {
+    margin: 15px 0;
+}

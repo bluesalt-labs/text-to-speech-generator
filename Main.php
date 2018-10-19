@@ -68,6 +68,7 @@ class Main
         $response = [
             'success'       => false,
             'audio_path'    => null,
+            'audio_name'    => null,
             'messages'      => [],
         ];
 
@@ -83,9 +84,9 @@ class Main
         }
 
         if($polyResponse) {
-            $response['success'] = true;
-            // todo
-            $response['audio_path'] = $polyResponse;
+            $response['success'] = $polyResponse['success'];
+            $response['audio_path'] = $polyResponse['path'];
+            $response['audio_name'] = $polyResponse['name'];
         }
 
         $this->data = array_merge($this->data, $response);
