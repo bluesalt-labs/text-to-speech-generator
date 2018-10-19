@@ -58,7 +58,7 @@ class TextToSpeech
     }
 
     private function getAudioOutputFilepath() {
-        $date       = new DateTime();
+        $date       = new \DateTime();
         $basePath   = DOCROOT.$this->settings['cache_paths']['audio']; // todo: different output?
         $timestamp  = $date->format('YmdHis');
         $extension  = $this->settings['audio_format'];
@@ -82,8 +82,8 @@ class TextToSpeech
     }
 
     private function getVoiceNameByKey($voiceKey) {
-        if( array_key_exists($voiceKey, $this->settings['voices']) ) {
-            return $this->settings['voices'][$voiceKey];
+        if( array_key_exists(intval($voiceKey), $this->settings['voices']) ) {
+            return $this->settings['voices'][$voiceKey]['name'];
         }
 
         return null;

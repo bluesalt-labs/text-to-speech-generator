@@ -8,7 +8,7 @@ require "Main.php";
 require "TextToSpeech.php";
 
 $dateNow = new \DateTime();
-$app = new Main( $_SERVER['REQUEST_METHOD'], $_REQUEST);
+$app = new Main();
 
 ?>
 
@@ -56,7 +56,7 @@ $app = new Main( $_SERVER['REQUEST_METHOD'], $_REQUEST);
                         </select>
                     </div>
 
-                    <button type="button" class="btn-lg" id="generate_audio_button">Generate</button>
+                    <button type="button" class="btn-lg" id="generate_audio_button">Submit</button>
                 </form>
 
                 <div class="container-half">

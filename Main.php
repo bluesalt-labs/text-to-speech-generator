@@ -8,43 +8,79 @@ use App\Helpers\TextToSpeech;
 class Main
 {
     protected $tts;
-    public $showPage;
     public $data;
 
-    public function __construct($requestType, $request) {
-        $this->tts = new TextToSpeech();
-        $this->showPage = true;
+    public function __construct() {
+        $this->tts      = new TextToSpeech();
+        $this->data     = [];
+        $requestType    = strtoupper( $_SERVER['REQUEST_METHOD'] );
 
-        if(strtoupper($requestType) !== 'GET') {
-            $this->handleRequest($requestType, $request);
+        $this->handleRequest($requestType);
+    }
+
+    public function handleRequest($type) {
+        $requestData = $this->getRequestData();
+
+        if(!$requestData && $type === 'GET' ) {
+            $this->exitAndContinue();
+        } else {
+            header('Content-Type: application/json');
+            $this->handleRequestWithData($type, $requestData);
         }
+    }
 
+    public function getRequestData() {
+        $data = [];
+
+        try {
+            $data = json_decode( file_get_contents('php://input') );
+        } catch (\Exception $e) {  }
+
+        return $data;
+    }
+
+    public function exitAndContinue() {
         return null;
     }
 
-    public function handleRequest($type, $request) {
-        $this->data = [];
-        $this->showPage = false;
+    public function handleRequestWithData($type, $requestData) {
 
-        // debug
-        var_dump( json_encode($type) );
-        var_dump( json_encode($request) );
+        switch($type) {
+            case 'POST':
+                $method = strtolower( $requestData->method );
 
+                switch($method) {
+                    case 'tts':
+                        $this->handleTTSRequest($requestData);
+                        break;
+                    default:
+                        $this->data['messages'][] = "'$method' '$type' requests not implemented.";
+                }
+                break;
+            default:
+                $this->data['messages'][] = "'".$type."' requests with data not implemented (yet...).";
+        }
 
+        exit( json_encode($this->data) );
     }
 
-
-    public function sendPolyRequest($request) {
+    public function handleTTSRequest($request) {
         $response = [
             'success'       => false,
             'audio_path'    => null,
             'messages'      => [],
         ];
 
-        $text   = $request['text_content']; // todo
-        $voice  = $request['voice'];        // todo
+        $polyResponse = null;
 
-        $polyResponse = $this->tts->sendRequest($text, $voice);
+        try {
+            $text   = $request->text;
+            $voice  = $request->voice;
+
+            $polyResponse = $this->tts->sendRequest($text, $voice);
+        } catch (\Exception $e) {
+            $response['messages'] = $e->getMessage();
+        }
 
         if($polyResponse) {
             $response['success'] = true;
@@ -52,8 +88,7 @@ class Main
             $response['audio_path'] = $polyResponse;
         }
 
-        return json_encode($response);
-        //exit( json_encode($response) ); // ?
+        $this->data = array_merge($this->data, $response);
     }
 
     public function getVoices() {

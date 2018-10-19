@@ -2,3 +2,4 @@
 .idea
 .DS_Store
 credentials.php
+/cache/audio/

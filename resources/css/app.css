@@ -212,6 +212,13 @@ select.error {
     border-color: #984B43;
 }
 
+button.success,
+input.success,
+textarea.success,
+select.success {
+    border-color: #4D8D5B;
+}
+
 
 .monospace { font-family: "Lucida Console", Monaco, monospace; }
 
