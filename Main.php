@@ -80,7 +80,7 @@ class Main
 
             $polyResponse = $this->tts->sendRequest($text, $voice);
         } catch (\Exception $e) {
-            $response['messages'] = $e->getMessage();
+            $response['messages'][] = $e->getMessage();
         }
 
         if($polyResponse) {
@@ -98,6 +98,10 @@ class Main
 
     public function getSSMLReplacements() {
         return TextToSpeech::getSSML();
+    }
+
+    public function getMaxCharacters() {
+        return TextToSpeech::getMaxCharacters();
     }
 
 }

@@ -8,6 +8,8 @@
         TTS.defaults = {
             elementIDs: {
                 form:   'text_content_form',
+                charCount:  'char_count',
+                reqCount:   'requests_count',
                 text:   'text_content',
                 voice:  'voice',
                 submit: 'generate_audio_button',
@@ -21,13 +23,16 @@
             btnText: {
                 default: 'Submit',
                 loading: 'Generating...'
-            }
+            },
+            maxRequestCharacters: 3000
         };
 
         //----- Initiate Cache Variables -----//
         TTS.cache = {
             elements: {
                 form:   null,
+                charCount:  null,
+                reqCount:   null,
                 text:   null,
                 voice:  null,
                 submit: null,
@@ -58,6 +63,14 @@
             }
         };
 
+        TTS.updateCharacterCounter = function() {
+            var chars   = getTextInputValue().length;
+            var maxPer  = TTS.defaults.maxRequestCharacters;
+            var numReq  = (chars > 0 ? ((chars / maxPer) >> 0) + 1 : 0);
+
+            getElement('charCount').innerText = getTextInputValue().length;
+            getElement('reqCount').innerText = numReq + (numReq === 1 ? " Request" : " Requests");
+        };
 
         //----- Private Helper Functions -----//
         function validateForm() {
@@ -94,15 +107,15 @@
         }
 
         function outputRequestResponse() {
-            var outputHtml = "";
-
             var success = TTS.cache.data.return.success;
+
+            // Show success or fail
+            var outputHtml = "<div class='output-element " +
+                ( success ? getElementSuccessClass() : getElementErrorClass() ) + "'>";
+
             var msgs    = TTS.cache.data.return.messages;
             var url     = TTS.cache.data.return.audioPath;
             var name    = TTS.cache.data.return.audioName;
-
-            // Show success or fail
-            getOutputElement().className = ( success ? getElementSuccessClass() : getElementErrorClass() );
 
             // Show messages
             if(msgs.length > 0) {
@@ -113,7 +126,7 @@
 
             // show audio url if available
             if(url) {
-                outputHtml += "<hr><a href='" + url +"' target='_blank'>"+ name +"</a><br />"
+                outputHtml += "<a href='" + url +"' target='_blank'>"+ name +"</a><br />"
 
                 outputHtml += "<audio class='audio-player' controls>" +
                     "<source src='" + url + "' type='audio/mpeg'>" +
@@ -121,7 +134,7 @@
                     "</audio><br />";
             }
 
-            getOutputElement().innerHTML += outputHtml;
+            getElement('output').innerHTML = (outputHtml + "</div>") + getElement('output').innerHTML;
         }
 
         function getTTSFormRequestData(refresh = true) {
@@ -137,73 +150,45 @@
             };
         }
 
-        // Get form elements
-        function getFormElement() {
-            if(!TTS.cache.elements.form) {
-                TTS.cache.elements.form = document.getElementById(TTS.defaults.elementIDs.form);
+        // Get Elements
+        function getElement(key) {
+            if( TTS.defaults.elementIDs.hasOwnProperty(key) ) {
+                if(!TTS.cache.elements[key]) {
+                    TTS.cache.elements[key] = document.getElementById(TTS.defaults.elementIDs[key]);
+                }
+
+                return TTS.cache.elements[key];
             }
 
-            return TTS.cache.elements.text;
-        }
-
-        function getTextInputElement() {
-            if(!TTS.cache.elements.text) {
-                TTS.cache.elements.text = document.getElementById(TTS.defaults.elementIDs.text);
-            }
-
-            return TTS.cache.elements.text;
-        }
-
-        function getVoiceInputElement() {
-            if(!TTS.cache.elements.voice) {
-                TTS.cache.elements.voice = document.getElementById(TTS.defaults.elementIDs.voice);
-            }
-
-            return TTS.cache.elements.voice;
-        }
-
-        function getSubmitButtonElement() {
-            if(!TTS.cache.elements.submit) {
-                TTS.cache.elements.submit = document.getElementById(TTS.defaults.elementIDs.submit);
-            }
-
-            return TTS.cache.elements.submit;
-        }
-
-        function getOutputElement() {
-            if(!TTS.cache.elements.output) {
-                TTS.cache.elements.output = document.getElementById(TTS.defaults.elementIDs.output);
-            }
-
-            return TTS.cache.elements.output;
+            return null;
         }
 
         // Get form input values
         function getTextInputValue() {
-            return getTextInputElement().value;
+            return getElement('text').value;
         }
 
         function getVoiceInputValue() {
-            return getVoiceInputElement().value;
+            return getElement('voice').value;
         }
 
         // Check if input is valid and change its class
         function isTextInputValid() {
             if( getTextInputValue() ) {
-                getTextInputElement().className = getElementSuccessClass();
+                getElement('text').className = getElementSuccessClass();
                 return true;
             } else {
-                getTextInputElement().className = getElementErrorClass();
+                getElement('text').className = getElementErrorClass();
                 return false;
             }
         }
 
         function isVoiceInputValid() {
             if( getVoiceInputValue() ) {
-                getVoiceInputElement().className = getElementSuccessClass();
+                getElement('voice').className = getElementSuccessClass();
                 return true;
             } else {
-                getVoiceInputElement().className = getElementErrorClass();
+                getElement('voice').className = getElementErrorClass();
                 return false;
             }
         }
@@ -216,26 +201,26 @@
 
         function disableValidForm() {
             // Set input classes to default
-            getTextInputElement().className = getElementDefaultClass();
-            getVoiceInputElement().className = getElementDefaultClass();
+            getElement('text').className = getElementDefaultClass();
+            getElement('voice').className = getElementDefaultClass();
 
             // Change button text
-            getSubmitButtonElement().innerText = TTS.defaults.btnText.loading;
+            getElement('submit').innerText = TTS.defaults.btnText.loading;
 
             // Disable inputs
-            getTextInputElement().disabled = true;
-            getVoiceInputElement().disabled = true;
-            getSubmitButtonElement().disabled = true;
+            getElement('text').disabled = true;
+            getElement('voice').disabled = true;
+            getElement('submit').disabled = true;
         }
 
         function enableForm() {
             // Change button text
-            getSubmitButtonElement().innerText = TTS.defaults.btnText.default;
+            getElement('submit').innerText = TTS.defaults.btnText.default;
 
             // Enable inputs
-            getTextInputElement().disabled = false;
-            getVoiceInputElement().disabled = false;
-            getSubmitButtonElement().disabled = false;
+            getElement('text').disabled = false;
+            getElement('voice').disabled = false;
+            getElement('submit').disabled = false;
         }
 
 
@@ -253,6 +238,7 @@
 
 document.addEventListener("DOMContentLoaded", function() {
 
-    document.getElementById('generate_audio_button').onclick = TTS.onGenerateButtonClick;
+    document.getElementById(TTS.defaults.elementIDs.submit).addEventListener('click', TTS.onGenerateButtonClick);
+    document.getElementById(TTS.defaults.elementIDs.text).addEventListener('input', TTS.updateCharacterCounter);
 
 });

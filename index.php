@@ -36,7 +36,12 @@ $app = new Main();
                 <form method="POST" action="/" class="container-half" id="text_content_form">
                     <h2>Form</h2>
                     <div class="input-container">
-                        <label for="text_content">Text Content</label>
+                        <label for="text_content">
+                            <span>Text Content</span>
+                            <span>
+                                (<span id="char_count">0</span> / <?=$app->getMaxCharacters()?>, <span id="requests_count">0 Requests</span>)
+                            </span>
+                        </label>
                         <textarea class="v-resize" id="text_content" name="text_content" rows="20"></textarea>
                     </div>
 
@@ -83,11 +88,10 @@ $app = new Main();
             <div class="container">
                 <div class="container-full">
                     <br />
-                    <div id="form_output_container">
-                        <!-- todo: show existing audio files on page load -->
-                    </div>
+                    <hr />
+                    <!-- todo: show existing audio files on page load? -->
+                    <div id="form_output_container"></div>
                 </div>
-
             </div>
 
         </div>

@@ -220,21 +220,6 @@ select:disabled {
     cursor:default;
 }
 
-button.error,
-input.error,
-textarea.error,
-select.error {
-    border-color: #984B43;
-}
-
-button.success,
-input.success,
-textarea.success,
-select.success {
-    border-color: #4D8D5B;
-}
-
-
 .monospace { font-family: "Lucida Console", Monaco, monospace; }
 
 .bold { font-weight: bold; }
@@ -245,3 +230,27 @@ select.success {
 .audio-player {
     margin: 15px 0;
 }
+
+.output-element {
+    border: 1px solid #778991;
+    padding: 15px 10px;
+    margin: 5px 15px;
+    border-radius: 6px;
+}
+
+button.error,
+input.error,
+textarea.error,
+select.error,
+.output-element.error {
+    border-color: #984B43;
+}
+
+button.success,
+input.success,
+textarea.success,
+select.success,
+.output-element.success {
+    border-color: #4D8D5B;
+}
+

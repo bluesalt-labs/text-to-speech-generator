@@ -60,15 +60,19 @@ class TextToSpeech
         try {
             $this->polly = new PollyClient(  $this->getPollyConfig() );
         } catch(\Exception $e) {
-            // todo: figure out how to do a better job with this
-            var_dump($e);
-            exit;
+            // todo: figure out a better way to handle this. probably credentials are bad.
+
+            exit(
+                json_encode([
+                    "messages" => [$e->getMessage()]
+                ])
+            );
         }
     }
 
     private function getAudioOutputFileInfo() {
         $date       = new \DateTime();
-        $basePath   = $this->settings['cache_paths']['audio']; // todo: different output?
+        $basePath   = $this->settings['output_path'];
         $timestamp  = $date->format('YmdHis');
         $extension  = $this->settings['audio_format'];
         $fullPath   = null;
@@ -120,7 +124,9 @@ class TextToSpeech
 
     private static function getSettings($key = null) {
         $settings = [
+            'max_request_characters' => 3000,
             'audio_format'  => 'mp3',
+            'output_path'   => 'cache/output/',
             'cache_paths'   => [
                 'text'  => 'cache/text/',
                 'audio' => 'cache/audio/',
@@ -240,8 +246,9 @@ class TextToSpeech
 
         if($key) {
             switch($key) {
-                case 'voices':  return $settings['voices']; break;
-                case 'ssml':    return $settings['ssml'];   break;
+                case 'voices': return $settings['voices']; break;
+                case 'ssml': return $settings['ssml'];   break;
+                case 'max_request_characters': return $settings['max_request_characters']; break;
                 default: return [];
             }
         }
@@ -251,4 +258,5 @@ class TextToSpeech
 
     public static function getVoices() { return static::getSettings('voices'); }
     public static function getSSML() { return static::getSettings('ssml'); }
+    public static function getMaxCharacters() { return static::getSettings('max_request_characters'); }
 }

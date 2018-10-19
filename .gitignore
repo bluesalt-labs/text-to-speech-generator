@@ -3,3 +3,5 @@
 .DS_Store
 credentials.php
 /cache/audio/
+/cache/text/
+/cache/output/
