@@ -34,6 +34,7 @@ $app = new Main();
             <div class="container">
 
                 <form method="POST" action="/" class="container-half" id="text_content_form">
+                    <input type="hidden" name="session_key" id="session_key" value="<?=$app->sessionKey?>" />
                     <h2>Form</h2>
                     <div class="input-container">
                         <label for="text_content">
@@ -87,6 +88,7 @@ $app = new Main();
 
             <div class="container">
                 <div class="container-full">
+                    <progress class="loading-bar" id="generate_audio_progress" value="50" max="100"></progress>
                     <br />
                     <hr />
                     <!-- todo: show existing audio files on page load? -->

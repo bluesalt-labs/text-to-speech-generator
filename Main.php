@@ -9,8 +9,11 @@ class Main
 {
     protected $tts;
     public $data;
+    public $sessionKey;
 
     public function __construct() {
+        $this->sessionKey     = $this->generateSessionKey();
+
         $this->tts      = new TextToSpeech();
         $this->data     = [];
         $requestType    = strtoupper( $_SERVER['REQUEST_METHOD'] );
@@ -20,6 +23,10 @@ class Main
 
     public function handleRequest($type) {
         $requestData = $this->getRequestData();
+
+        if( array_key_exists('sessionKey', $requestData) ) {
+            $this->sessionKey = $requestData->sessionKey;
+        }
 
         if(!$requestData && $type === 'GET' ) {
             $this->exitAndContinue();
@@ -90,6 +97,17 @@ class Main
         }
 
         $this->data = array_merge($this->data, $response);
+    }
+
+    public function generateSessionKey($length = 12) {
+        $key = '';
+        $pool = array_merge(range(0, 9), range('a', 'z'), range('A', 'Z'));
+
+        for($i = 0; $i < $length; $i++) {
+            $key .= $pool[mt_rand(0, count($pool) - 1)];
+        }
+
+        return $key;
     }
 
     public function getVoices() {

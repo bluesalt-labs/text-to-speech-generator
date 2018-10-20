@@ -8,11 +8,13 @@
         TTS.defaults = {
             elementIDs: {
                 form:   'text_content_form',
+                session: 'session_key',
                 charCount:  'char_count',
                 reqCount:   'requests_count',
                 text:   'text_content',
                 voice:  'voice',
                 submit: 'generate_audio_button',
+                progress: 'generate_audio_progress',
                 output: 'form_output_container'
             },
             inputClasses: {
@@ -36,10 +38,12 @@
                 text:   null,
                 voice:  null,
                 submit: null,
+                progress: null,
                 output: null
             },
             data: {
                 submit: {
+                    sessionKey: null,
                     text:   null,
                     voice:  null
                 },
@@ -64,17 +68,17 @@
         };
 
         TTS.updateCharacterCounter = function() {
-            var chars   = getTextInputValue().length;
+            var chars   = getFormValue('text').length;
             var maxPer  = TTS.defaults.maxRequestCharacters;
             var numReq  = (chars > 0 ? ((chars / maxPer) >> 0) + 1 : 0);
 
-            getElement('charCount').innerText = getTextInputValue().length;
+            getElement('charCount').innerText = chars;
             getElement('reqCount').innerText = numReq + (numReq === 1 ? " Request" : " Requests");
         };
 
         //----- Private Helper Functions -----//
         function validateForm() {
-            return ( isTextInputValid() && isVoiceInputValid() );
+            return ( isInputValid('text') && isInputValid('voice') );
         }
 
         function submitForm() {
@@ -139,12 +143,14 @@
 
         function getTTSFormRequestData(refresh = true) {
             if(refresh) {
-                TTS.cache.data.submit.text   = getTextInputValue();
-                TTS.cache.data.submit.voice  = getVoiceInputValue();
+                TTS.cache.data.submit.sessionKey  = getFormValue(TTS.defaults.elementIDs.session);
+                TTS.cache.data.submit.text   = getFormValue('text');
+                TTS.cache.data.submit.voice  = getFormValue('voice');
             }
 
             return {
                 method: 'tts',
+                sessionKey: TTS.cache.data.submit.sessionKey,
                 text: TTS.cache.data.submit.text,
                 voice: TTS.cache.data.submit.voice
             };
@@ -164,31 +170,17 @@
         }
 
         // Get form input values
-        function getTextInputValue() {
-            return getElement('text').value;
-        }
-
-        function getVoiceInputValue() {
-            return getElement('voice').value;
+        function getFormValue(key) {
+            return getElement(key).value;
         }
 
         // Check if input is valid and change its class
-        function isTextInputValid() {
-            if( getTextInputValue() ) {
-                getElement('text').className = getElementSuccessClass();
+        function isInputValid(key) {
+            if( getFormValue(key) ) {
+                getElement(key).className = getElementSuccessClass();
                 return true;
             } else {
-                getElement('text').className = getElementErrorClass();
-                return false;
-            }
-        }
-
-        function isVoiceInputValid() {
-            if( getVoiceInputValue() ) {
-                getElement('voice').className = getElementSuccessClass();
-                return true;
-            } else {
-                getElement('voice').className = getElementErrorClass();
+                getElement(key).className = getElementErrorClass();
                 return false;
             }
         }
