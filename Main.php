@@ -24,7 +24,7 @@ class Main
     public function handleRequest($type) {
         $requestData = $this->getRequestData();
 
-        if( array_key_exists('sessionKey', $requestData) ) {
+        if( $requestData && array_key_exists('sessionKey', $requestData) ) {
             $this->sessionKey = $requestData->sessionKey;
         }
 
