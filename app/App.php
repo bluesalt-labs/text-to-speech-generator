@@ -3,9 +3,7 @@ namespace App;
 
 defined('DOCROOT') or die(header('HTTP/1.0 403 Forbidden'));
 
-use App\Helpers\TextToSpeech;
-
-class Main
+class App
 {
     protected $tts;
     public $data;
@@ -82,10 +80,11 @@ class Main
         $polyResponse = null;
 
         try {
-            $text   = $request->text;
-            $voice  = $request->voice;
+            $text       = $request->text;
+            $voice      = $request->voice;
+            $sessionKey = $request->session_key;
 
-            $polyResponse = $this->tts->sendRequest($text, $voice);
+            $polyResponse = $this->tts->sendRequest($text, $voice, $sessionKey);
         } catch (\Exception $e) {
             $response['messages'][] = $e->getMessage();
         }

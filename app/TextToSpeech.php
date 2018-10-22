@@ -1,9 +1,10 @@
 <?php
-namespace App\Helpers;
+namespace App;
 
 defined('DOCROOT') or die(header('HTTP/1.0 403 Forbidden'));
+defined('CONFIGROOT') or die(header('HTTP/1.0 403 Forbidden'));
 
-require DOCROOT.'./vendor/autoload.php';
+require_once DOCROOT.'./vendor/autoload.php';
 
 use Aws\Polly\PollyClient;
 
@@ -14,13 +15,13 @@ class TextToSpeech
     private $polly;
 
     public function __construct() {
-        $this->credentials = include "./credentials.php";
+        $this->credentials = include CONFIGROOT."credentials.php";
         $this->settings = static::getSettings();
 
         $this->initPolly();
     }
 
-    public function sendRequest($text, $voiceKey) {
+    public function sendRequest($text, $voiceKey, $sessionKey) {
         $response       = null;
         $requestData    = null;
         $processedText  = $this->processRawText($text);
@@ -55,6 +56,12 @@ class TextToSpeech
             "name"      => null,
         ];
     }
+
+    public static function getScriptProgress($sessionKey) {
+
+    }
+
+    //public static function updateScriptProgress
 
     private function initPolly() {
         try {
@@ -121,6 +128,16 @@ class TextToSpeech
 
         return $cleanString;
     }
+
+
+    /*
+    todo:
+        - read $settings['max_request_characters'] characters from input text
+        - save to text file
+        - more stuff
+        -
+        - create endpoint that can be pinged with specific session ID to get status of current script.
+    */
 
     private static function getSettings($key = null) {
         $settings = [

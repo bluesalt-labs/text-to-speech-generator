@@ -3,12 +3,14 @@
 namespace App;
 
 define('DOCROOT', realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR);
+define('APPROOT', DOCROOT.'app'.DIRECTORY_SEPARATOR);
+define('CONFIGROOT', DOCROOT.'config'.DIRECTORY_SEPARATOR);
 
-require "Main.php";
-require "TextToSpeech.php";
+require APPROOT."App.php";
+require APPROOT."TextToSpeech.php";
 
 $dateNow = new \DateTime();
-$app = new Main();
+$app = new App();
 
 ?>
 
