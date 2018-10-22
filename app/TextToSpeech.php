@@ -1,11 +1,6 @@
 <?php
 namespace App;
 
-defined('DOCROOT') or die(header('HTTP/1.0 403 Forbidden'));
-defined('CONFIGROOT') or die(header('HTTP/1.0 403 Forbidden'));
-
-require_once DOCROOT.'./vendor/autoload.php';
-
 use Aws\Polly\PollyClient;
 
 class TextToSpeech

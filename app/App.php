@@ -1,8 +1,6 @@
 <?php
 namespace App;
 
-defined('DOCROOT') or die(header('HTTP/1.0 403 Forbidden'));
-
 class App
 {
     protected $tts;
