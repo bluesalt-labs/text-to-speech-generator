@@ -43,7 +43,7 @@
             },
             data: {
                 submit: {
-                    sessionKey: null,
+                    session_key: null,
                     text:   null,
                     voice:  null
                 },
@@ -143,14 +143,14 @@
 
         function getTTSFormRequestData(refresh = true) {
             if(refresh) {
-                TTS.cache.data.submit.sessionKey  = getFormValue(TTS.defaults.elementIDs.session);
+                TTS.cache.data.submit.session_key  = getFormValue('session');
                 TTS.cache.data.submit.text   = getFormValue('text');
                 TTS.cache.data.submit.voice  = getFormValue('voice');
             }
 
             return {
                 method: 'tts',
-                sessionKey: TTS.cache.data.submit.sessionKey,
+                session_key: TTS.cache.data.submit.session_key,
                 text: TTS.cache.data.submit.text,
                 voice: TTS.cache.data.submit.voice
             };
@@ -171,7 +171,13 @@
 
         // Get form input values
         function getFormValue(key) {
-            return getElement(key).value;
+            try {
+                return getElement(key).value;
+            } catch(e) {
+                console.log(e);
+            }
+            return null;
+
         }
 
         // Check if input is valid and change its class
