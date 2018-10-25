@@ -5,10 +5,10 @@ namespace App;
 class Request
 {
 
-    public $type;
-    public $headers;
-    public $uri;
-    public $data;
+    protected $type;
+    protected $headers;
+    protected $uri;
+    protected $data;
 
     public function __construct() {
         $this->data = [];
@@ -99,7 +99,12 @@ class Request
     }
 
     public function __get($key) {
+        // This doesn't seem to work :/
         return $this->attributes($key);
+    }
+
+    public function getType() {
+        return $this->type;
     }
 
 }
