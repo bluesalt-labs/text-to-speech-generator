@@ -1,102 +1,71 @@
 <?php
+
 namespace App;
+
+use Dotenv\Dotenv;
 
 class App
 {
-    protected $tts;
-    public $data;
-    public $sessionKey;
+    protected $sessionKey;
+    protected $dotenv;
+
+    protected $request;
+    protected $controller;
+    public $response;
 
     public function __construct() {
-        $this->sessionKey     = $this->generateSessionKey();
+        $this->request = new Request();
+        $this->controller = new Controller();
+        $this->response = new Response();
 
-        $this->tts      = new TextToSpeech();
-        $this->data     = [];
-        $requestType    = strtoupper( $_SERVER['REQUEST_METHOD'] );
-
-        $this->handleRequest($requestType);
+        $this->getOrCreateSessionKey();
     }
 
-    public function handleRequest($type) {
-        $requestData = $this->getRequestData();
+    public function getEnvironmentVariable($key, $default = null) {
+        $value = getenv($key);
 
-        if( $requestData && array_key_exists('session_key', $requestData) ) {
-            $this->sessionKey = $requestData->session_key;
-        }
+        return ($value ? $value : $default);
+    }
 
-        if(!$requestData && $type === 'GET' ) {
-            $this->exitAndContinue();
+    public function handleRequest() {
+        $action = $this->request->getControllerAction();
+
+        if(method_exists($this->controller, $action)) {
+            return $this->controller->$action( $this->request );
         } else {
-            header('Content-Type: application/json');
-            $this->handleRequestWithData($type, $requestData);
-        }
-    }
-
-    public function getRequestData() {
-        $data = [];
-
-        try {
-            $data = json_decode( file_get_contents('php://input') );
-        } catch (\Exception $e) {  }
-
-        return $data;
-    }
-
-    public function exitAndContinue() {
-        return null;
-    }
-
-    public function handleRequestWithData($type, $requestData) {
-
-        switch($type) {
-            case 'POST':
-                $method = strtolower( $requestData->method );
-
-                switch($method) {
-                    case 'tts':
-                        $this->handleTTSRequest($requestData);
-                        break;
-                    default:
-                        $this->data['messages'][] = "'$method' '$type' requests not implemented.";
-                }
-                break;
-            default:
-                $this->data['messages'][] = "'".$type."' requests with data not implemented (yet...).";
+            return $this->controller->get_404("Page doesn't exist");
         }
 
-        exit( json_encode($this->data) );
     }
 
-    public function handleTTSRequest($request) {
-        $response = [
-            'success'       => false,
-            'audio_path'    => null,
-            'audio_name'    => null,
-            'messages'      => [],
-        ];
+   ////public function handleRequestWithData($type, $requestData) {
 
-        $polyResponse = null;
+   //    switch($type) {
+   //        case 'POST':
+   //            $method = strtolower( $requestData->method );
 
-        try {
-            $text       = $request->text;
-            $voice      = $request->voice;
-            $sessionKey = $request->session_key;
+   //            switch($method) {
+   //                case 'tts':
+   //                    $this->handleTTSRequest($requestData);
+   //                    break;
+   //                default:
+   //                    $this->data['messages'][] = "'$method' '$type' requests not implemented.";
+   //            }
+   //            break;
+   //        default:
+   //            $this->data['messages'][] = "'".$type."' requests with data not implemented (yet...).";
+   //    }
 
-            $polyResponse = $this->tts->sendRequest($text, $voice, $sessionKey);
-        } catch (\Exception $e) {
-            $response['messages'][] = $e->getMessage();
+   //    exit( json_encode($this->data) );
+   //}
+
+
+    private function getOrCreateSessionKey($length = 12) {
+        if($this->request->attributes('session_key')) {
+            return $this->request->attributes('session_key');
         }
 
-        if($polyResponse) {
-            $response['success'] = $polyResponse['success'];
-            $response['audio_path'] = $polyResponse['path'];
-            $response['audio_name'] = $polyResponse['name'];
-        }
-
-        $this->data = array_merge($this->data, $response);
-    }
-
-    public function generateSessionKey($length = 12) {
+        // If a key doesn't exist already, create a new one.
         $key = '';
         $pool = array_merge(range(0, 9), range('a', 'z'), range('A', 'Z'));
 
@@ -104,19 +73,28 @@ class App
             $key .= $pool[mt_rand(0, count($pool) - 1)];
         }
 
-        return $key;
+        return $this->sessionKey = $key;
+    }
+
+    public function getSessionKey() {
+        return $this->sessionKey;
+    }
+
+    private function loadDotenv() {
+        $this->dotenv = new Dotenv(DOC_ROOT);
+        $this->dotenv->load();
     }
 
     public function getVoices() {
-        return TextToSpeech::getVoices();
+        return Helpers\TextToSpeech::getVoices();
     }
 
     public function getSSMLReplacements() {
-        return TextToSpeech::getSSML();
+        return Helpers\TextToSpeech::getSSML();
     }
 
     public function getMaxCharacters() {
-        return TextToSpeech::getMaxCharacters();
+        return Helpers\TextToSpeech::getMaxCharacters();
     }
 
 }

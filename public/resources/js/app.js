@@ -83,7 +83,7 @@
 
         function submitForm() {
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/', true);
+            xhr.open('POST', 'submit-audio-request', true);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.responseType = 'json';
             xhr.onload = function() {
@@ -149,7 +149,6 @@
             }
 
             return {
-                method: 'tts',
                 session_key: TTS.cache.data.submit.session_key,
                 text: TTS.cache.data.submit.text,
                 voice: TTS.cache.data.submit.voice

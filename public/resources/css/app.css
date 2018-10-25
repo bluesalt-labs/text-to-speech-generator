@@ -240,6 +240,8 @@ select:disabled {
     margin: 15px 0;
 }
 
+.error-message-container,
+.success-message-container,
 .output-element {
     border: 1px solid #778991;
     padding: 15px 10px;
@@ -252,6 +254,7 @@ select:disabled {
     .output-element { max-width: 50vw; }
 }
 
+.error-message-container,
 button.error,
 input.error,
 textarea.error,
@@ -260,6 +263,7 @@ select.error,
     border-color: #984B43;
 }
 
+.success-message-container,
 button.success,
 input.success,
 textarea.success,
@@ -268,3 +272,25 @@ select.success,
     border-color: #4D8D5B;
 }
 
+.error-container-full {
+    width: 100%;
+    height: 50%;
+    margin-top: 25%;
+    font-size: 3em;
+    text-align: center;
+    vertical-align: center;
+}
+
+.error-message-container {
+    list-style: none;
+    width: 800px;
+    margin: auto;
+    padding: 20px 15px;
+}
+
+@media(max-width:830px) {
+    .error-message-container {
+        width: 90vw;
+        margin: 0 5vw;
+    }
+}

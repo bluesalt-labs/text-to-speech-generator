@@ -1,5 +1,5 @@
 <?php
-namespace App;
+namespace App\Helpers;
 
 use Aws\Polly\PollyClient;
 
@@ -10,9 +10,14 @@ class TextToSpeech
     private $polly;
 
     public function __construct() {
-        $this->credentials = include CONFIGROOT."credentials.php";
-        $this->settings = static::getSettings();
+        $this->credentials = [
+            'key'       => env('AWS_KEY', 'key'),
+            'secret'    => env('AWS_SECRET', 'secret'),
+            'region'    => env('AWS_REGION', 'us-east-1'),
+        ];
 
+
+        $this->settings = static::getSettings();
         $this->initPolly();
     }
 
@@ -32,23 +37,27 @@ class TextToSpeech
             ];
         }
 
+
+
         if($requestData) {
+
             $response = $this->polly->synthesizeSpeech($requestData);
-            $fileInfo = $this->getAudioOutputFileInfo();
-            $success = file_put_contents($fileInfo['path'], $response['AudioStream']);
+
+            $fileInfo = $this->getAudioOutputFileInfo($voice);
+            $success = file_put_contents(PUBLIC_ROOT.$fileInfo['path'], $response['AudioStream']);
 
             return [
-                "success"   => $success,
-                "path"      => $fileInfo['path'],
-                "name"      => $fileInfo['name'],
+                'success'   => $success,
+                'path'      => $fileInfo['path'],
+                'name'      => $fileInfo['name'],
             ];
         }
 
         // todo: DRY
         return [
-            "success"   => false,
-            "path"      => null,
-            "name"      => null,
+            'success'   => false,
+            'path'      => null,
+            'name'      => null,
         ];
     }
 
@@ -72,7 +81,7 @@ class TextToSpeech
         }
     }
 
-    private function getAudioOutputFileInfo() {
+    private function getAudioOutputFileInfo($voice) {
         $date       = new \DateTime();
         $basePath   = $this->settings['output_path'];
         $timestamp  = $date->format('YmdHis');
@@ -86,7 +95,7 @@ class TextToSpeech
         ];
 
         if($basePath && $timestamp && $extension) {
-            $filename = $timestamp.'_output.'.$extension;
+            $filename = $timestamp."_$voice.".$extension;
             $output['path'] = $basePath.$filename;
             $output['name'] = $filename;
         }
@@ -138,7 +147,7 @@ class TextToSpeech
         $settings = [
             'max_request_characters' => 3000,
             'audio_format'  => 'mp3',
-            'output_path'   => 'cache/output/',
+            'output_path'   => 'audio_output/',
             'cache_paths'   => [
                 'text'  => 'cache/text/',
                 'audio' => 'cache/audio/',
