@@ -16,39 +16,6 @@ class Controller
         return $this->response;
     }
 
-    public function post_SubmitAudioRequest(Request $request) {
-        $tts = new Helpers\TextToSpeech();
-
-        $response = [
-            'success'       => false,
-            'audio_path'    => null,
-            'audio_name'    => null,
-            'messages'      => [],
-        ];
-
-        $polyResponse = null;
-
-        try {
-            $text       = $request->attributes('text');
-            $voice      = $request->attributes('voice');
-            $sessionKey = app()->getSessionKey();
-
-            $polyResponse = $tts->sendRequest($text, $voice, $sessionKey);
-        } catch (\Error $e) {
-            $response['messages'][] = $e->getMessage();
-        }
-
-        if($polyResponse) {
-            $response['success'] = $polyResponse['success'];
-            $response['audio_path'] = $polyResponse['path'];
-            $response['audio_name'] = $polyResponse['name'];
-        }
-
-        $this->response->data($response);
-
-        return $this->response->toJson();
-    }
-
     public function get_404($message = null) {
         return $this->response->return404($message);
     }
@@ -56,4 +23,43 @@ class Controller
     public function get_500($message = null) {
         return $this->response->return500($message);
     }
+
+    public function post_SubmitAudioRequest(Request $request) {
+        $output = [
+            'success'       => false,
+            'audio_path'    => null,
+            'audio_name'    => null,
+            'messages'      => [],
+        ];
+
+        $ttsResponse = null;
+
+        try {
+            $text       = $request->attributes('text');
+            $voice      = $request->attributes('voice');
+
+            $submitResponse = app()->submitJobRequest($text, $voice);
+        } catch (\Error $e) {
+            $output['messages'][] = $e->getMessage();
+        }
+
+        if($ttsResponse) {
+            $output['success'] = $ttsResponse['success'];
+            $output['audio_path'] = $ttsResponse['path'];
+            $output['audio_name'] = $ttsResponse['name'];
+        }
+
+        $this->response->data($output);
+        $this->response->toJson();
+    }
+
+    public function get_GetRequestStatus(Request $request) {
+        $jobID = $request->attributes('job_id');
+
+        $output = app()->getJobStatus($jobID);
+
+        $this->response->data($output);
+        $this->response->toJson();
+    }
+
 }

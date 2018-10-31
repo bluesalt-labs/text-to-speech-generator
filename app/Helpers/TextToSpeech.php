@@ -5,279 +5,358 @@ use Aws\Polly\PollyClient;
 
 class TextToSpeech
 {
-    private $credentials = [];
-    private $settings = [];
-    private $polly;
+    protected $polly;
 
+    /**
+     * TextToSpeech constructor.
+     */
     public function __construct() {
-        $this->credentials = [
-            'key'       => env('AWS_KEY', 'key'),
-            'secret'    => env('AWS_SECRET', 'secret'),
-            'region'    => env('AWS_REGION', 'us-east-1'),
-        ];
-
-
-        $this->settings = static::getSettings();
-        $this->initPolly();
+        $this->polly = static::getPollyClient();
     }
 
-    public function sendRequest($text, $voiceKey, $sessionKey) {
-        $response       = null;
-        $requestData    = null;
-        $processedText  = $this->processRawText($text);
-        $voice          = $this->getVoiceNameByKey($voiceKey);
-        $format         = $this->settings['audio_format'];
-
-        if($processedText && $voice && $format) {
-            $requestData = [
-                'Text'          => '<speak>'.$processedText.'</speak>',
-                'OutputFormat'  => $format,
-                'TextType'      => 'ssml',
-                'VoiceId'       => $voice,
-            ];
-        }
-
-
-
-        if($requestData) {
-
-            $response = $this->polly->synthesizeSpeech($requestData);
-
-            $fileInfo = $this->getAudioOutputFileInfo($voice);
-            $success = file_put_contents(PUBLIC_ROOT.$fileInfo['path'], $response['AudioStream']);
-
-            return [
-                'success'   => $success,
-                'path'      => $fileInfo['path'],
-                'name'      => $fileInfo['name'],
-            ];
-        }
-
-        // todo: DRY
-        return [
-            'success'   => false,
-            'path'      => null,
-            'name'      => null,
-        ];
-    }
-
-    public static function getScriptProgress($sessionKey) {
-
-    }
-
-    //public static function updateScriptProgress
-
-    private function initPolly() {
-        try {
-            $this->polly = new PollyClient(  $this->getPollyConfig() );
-        } catch(\Exception $e) {
-            // todo: figure out a better way to handle this. probably credentials are bad.
-
-            exit(
-                json_encode([
-                    "messages" => [$e->getMessage()]
-                ])
-            );
-        }
-    }
-
-    private function getAudioOutputFileInfo($voice) {
-        $date       = new \DateTime();
-        $basePath   = $this->settings['output_path'];
-        $timestamp  = $date->format('YmdHis');
-        $extension  = $this->settings['audio_format'];
-        $fullPath   = null;
-
-
+    /**
+     * Send a TextToSpeech request through the AWS Polly API and return the response.
+     * Returns an array with function success/messages and  Polly response data.
+     *
+     * @param $requestData - ['text_type', 'output_format', 'text', 'voice_key']
+     * @return array
+     */
+    public function sendRequest($requestData) {
         $output = [
-            'path'  => null,
-            'name'  => null
+            'success'       => false,
+            'response_data' => null,
+            'messages'      => [],
         ];
 
-        if($basePath && $timestamp && $extension) {
-            $filename = $timestamp."_$voice.".$extension;
-            $output['path'] = $basePath.$filename;
-            $output['name'] = $filename;
+        $requestDataValidation = static::validateRequestData($requestData);
+
+        if(!$requestDataValidation['success']) {
+            // todo: make sure this works
+            $output['success'] = false;
+            $output['messages'] = array_merge($requestDataValidation['messages'], $output['messages']);
+
+            return $output;
+        }
+
+        try {
+            $type   = $requestData['text_type'];
+            $format = $requestData['output_format'];
+
+            if($type === 'ssml') {
+                $processedText = '<speak>'.static::processSSMLReplacements($requestData['text']).'</speak>';
+            } else {
+                $processedText = $requestData['text'];
+            }
+
+            $voice = static::getVoiceNameByKey($requestData['voice_key']);
+        } catch(\Exception $e) {
+            // todo: make sure this works
+            $output['success'] = false;
+            $output['messages'] = array_merge($requestDataValidation['messages'], $output['messages']);
+
+            return $output;
+        }
+
+        // Send the request
+        $responseData = $this->polly->synthesizeSpeech([
+            'Text'          => $processedText,
+            'OutputFormat'  => $format,
+            'TextType'      => $type,
+            'VoiceId'       => $voice,
+        ]);
+
+        // todo: check for error
+        $output['success'] = true;
+        $output['response_data'] = $responseData;
+
+        return $output;
+    }
+
+    /**
+     * Runs sendRequest statically.
+     *
+     * @param $requestData
+     * @return array
+     */
+    public static function staticSendRequest($requestData) {
+        $tts = new self;
+
+        return $tts->sendRequest($requestData);
+    }
+
+    /**
+     * Determines if a text string is greater than the maximum number of allowed characters.
+     *
+     * @param string $text
+     * @return bool
+     */
+    public static function isTextTooLong($text) {
+        return !!(sizeof($text) > static::getMaxCharacters());
+    }
+
+    /**
+     * Get the maximum number of characters per Polly request.
+     *
+     * @return int
+     */
+    public static function getMaxCharacters() {
+        return intval( env('MAX_REQUEST_CHARS', 3000) );
+    }
+
+
+    //**************** Polly Client Functions ********************************//
+
+    /**
+     * Get the AWS Polly client. Returns an array with function success/messages and the client
+     *
+     * @return array
+     */
+    protected static function getPollyClient() {
+        $output = [
+            'success'   => false,
+            'client'    => null,
+            'messages'  => [],
+        ];
+
+        try {
+            $output['client'] = new PollyClient( static::getPollyConfig() );
+            $output['success']  = true;
+        } catch(\Exception $e) {
+            $output['success']  = false;
+            $output['messages'] = $e->getMessage();
         }
 
         return $output;
     }
 
-    private function getPollyConfig() {
+    /**
+     * Get the AWS Polly configuration from the environment variables
+     * @return array
+     */
+    protected static function getPollyConfig() {
+        $credentials = static::getCredentials();
+
         return [
-            'version'     => 'latest',
-            'region'      => $this->credentials['region'],
+            'version'   => $credentials['version'],
+            'region'    => $credentials['region'],
             'credentials' => [
-                'key'         => $this->credentials['key'],
-                'secret'      => $this->credentials['secret'],
+                'key'         => $credentials['key'],
+                'secret'      => $credentials['secret'],
             ],
         ];
     }
 
-    private function getVoiceNameByKey($voiceKey) {
-        if( array_key_exists(intval($voiceKey), $this->settings['voices']) ) {
-            return $this->settings['voices'][$voiceKey]['name'];
-        }
-
-        return null;
+    protected static function getCredentials() {
+        return [
+            'version'   => env('POLLY_VERSION', 'latest'),
+            'region'    => env('AWS_REGION', 'us-east-1'),
+            'key'       => env('AWS_KEY', 'key'),
+            'secret'    => env('AWS_SECRET', 'secret'),
+        ];
     }
 
-    private function processRawText($text) {
+    protected static function validateRequestData($requestData) {
+        $output = [
+            'success'   => true,
+            'messages'  => [],
+        ];
+
+        //['text_type', 'output_format', 'text', 'voice_key']
+        if(gettype($requestData) === 'array') {
+            $output['success'] = false;
+            $output['messages'][] = "Request Data is not an array.";
+        }
+
+        if(!array_key_exists('text_type', $requestData)) {
+            $output['success'] = false;
+            $output['messages'][] = "Must specify text type.";
+        }
+
+        if(!array_key_exists('output_format', $requestData)) {
+            $output['success'] = false;
+            $output['messages'][] = "Request Data is not an array.";
+        }
+
+        return $output;
+    }
+
+
+    //**************** TextToSpeech Internal Helper Functions ****************//
+
+    private static function processSSMLReplacements($text) {
         $cleanString = $text;
 
-        foreach($this->settings['ssml'] as $acronym => $replacement) {
+        foreach(static::getSSMLReplacements() as $acronym => $replacement) {
             $cleanString = str_replace($acronym, $replacement, $cleanString);
-
         }
 
         return $cleanString;
     }
 
+    private function getVoiceNameByKey($voiceKey) {
+        $voices = self::getAvailableVoices();
 
-    /*
-    todo:
-        - read $settings['max_request_characters'] characters from input text
-        - save to text file
-        - more stuff
-        -
-        - create endpoint that can be pinged with specific session ID to get status of current script.
-    */
-
-    private static function getSettings($key = null) {
-        $settings = [
-            'max_request_characters' => 3000,
-            'audio_format'  => 'mp3',
-            'output_path'   => 'audio_output/',
-            'cache_paths'   => [
-                'text'  => 'cache/text/',
-                'audio' => 'cache/audio/',
-            ],
-            'ssml'          => [
-                "("             => '<s>(',
-                ")"             => ')</s>',
-                ")</s>."        => ')</s>',
-                ")</s>;"        => ')</s>',
-                ")</s>:"        => ')</s>',
-                "EPPP"          => 'E Triple P',
-                "CPLEE"         => 'See Plea',
-                "DSM-IV"        => '<say-as interpret-as="character">DSM</say-as> 4',
-                "DSM-5"         => '<say-as interpret-as="character">DSM</say-as> 5',
-                "APA"           => '<say-as interpret-as="character">APA</say-as>',
-                "PTSD"          => '<say-as interpret-as="character">PTSD</say-as>',
-            ],
-            'voices'        => [
-                1   => [
-                    "preferred" => false,
-                    "gender"	=> "m",
-                    "name"	    => "Russell",
-                    "language"  => "en-AU",
-                ],
-                2   => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Nicole",
-                    "language"  => "en-AU",
-                ],
-                3   => [
-                    "preferred" => true,
-                    "gender"	=> "m",
-                    "name"	    => "Brian",
-                    "language"	=> "en-GB",
-                ],
-                4   => [
-                    "preferred" => true,
-                    "gender"	=> "f",
-                    "name"      => "Amy",
-                    "language"	=> "en-GB",
-                ],
-                5   => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Emma",
-                    "language"  => "en-GB",
-                ],
-                6   => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Aditi",
-                    "language"  => "en-IN",
-                ],
-                7   => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Raveena",
-                    "language"  => "en-IN",
-                ],
-                8   => [
-                    "preferred" => false,
-                    "gender"	=> "m",
-                    "name"	    => "Joey",
-                    "language"  => "en-US",
-                ],
-                9   => [
-                    "preferred" => false,
-                    "gender"	=> "m",
-                    "name"	    => "Justin",
-                    "language"  => "en-US",
-                ],
-                10  => [
-                    "preferred" => true,
-                    "gender"	=> "m",
-                    "name"	    => "Matthew",
-                    "language"  => "en-US",
-                ],
-                11  => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Ivy",
-                    "language"  => "en-US",
-                ],
-                12  => [
-                    "preferred" => true,
-                    "gender"	=> "f",
-                    "name"	    => "Joanna",
-                    "language"  => "en-US",
-                ],
-                13  => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Kendra",
-                    "language"  => "en-US",
-                ],
-                14  => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Kimberly",
-                    "language"  => "en-US",
-                ],
-                15  => [
-                    "preferred" => false,
-                    "gender"	=> "f",
-                    "name"	    => "Salli",
-                    "language"  => "en-US",
-                ],
-                16  => [
-                    "preferred" => false,
-                    "gender"	=> "m",
-                    "name"	    => "Geraint",
-                    "language"  => "en-GB-WLS",
-                ],
-            ],
-        ];
-
-        if($key) {
-            switch($key) {
-                case 'voices': return $settings['voices']; break;
-                case 'ssml': return $settings['ssml'];   break;
-                case 'max_request_characters': return $settings['max_request_characters']; break;
-                default: return [];
-            }
+        if( array_key_exists(intval($voiceKey), $voices) ) {
+            return $voices[$voiceKey]['name'];
+        } else {
+            throw new \InvalidArgumentException("Voice Key $voiceKey does not exist");
         }
-
-        return $settings;
     }
 
-    public static function getVoices() { return static::getSettings('voices'); }
-    public static function getSSML() { return static::getSettings('ssml'); }
-    public static function getMaxCharacters() { return static::getSettings('max_request_characters'); }
+    public static function getAudioOutputExtension($type) {
+        $types = static::getAudioOutputTypes();
+
+        if( array_key_exists($type, $types)) {
+            return $types[$type]['ext'];
+        }
+
+        return null;
+    }
+
+
+    //**************** TextToSpeech Setting Array Functions ******************//
+    public static function getAudioOutputTypes() {
+        return [
+            'mp3'   => [
+                'ext'           => 'mp3',
+                'mime_type'     => 'audio/mpeg',
+                'polly_type'    => 'mp3',
+            ],
+            'ogg'   => [
+                'ext'           => 'ogg',
+                'mime_type'     => 'audio/ogg',
+                'polly_type'    => 'ogg_vorbis',
+            ],
+            'pcm'   => [
+                'ext'           => 'pcm',
+                'mime_type'     => 'audio/pcm',
+                'polly_type'    => 'pcm',
+            ],
+            'json'  => [
+                'ext'           => 'json',
+                'mime_type'     => 'application/json',
+                'polly_type'    => 'json',
+            ],
+        ];
+    }
+
+
+    public static function getSSMLReplacements() {
+        return [
+            "("             => '<s>(',
+            ")"             => ')</s>',
+            ")</s>."        => ')</s>',
+            ")</s>;"        => ')</s>',
+            ")</s>:"        => ')</s>',
+            "EPPP"          => 'E Triple P',
+            "CPLEE"         => 'See Plea',
+            "DSM-IV"        => '<say-as interpret-as="character">DSM</say-as> 4',
+            "DSM-5"         => '<say-as interpret-as="character">DSM</say-as> 5',
+            "APA"           => '<say-as interpret-as="character">APA</say-as>',
+            "PTSD"          => '<say-as interpret-as="character">PTSD</say-as>',
+        ];
+    }
+
+
+    public static function getAvailableVoices() {
+        return [
+            1   => [
+                "preferred" => false,
+                "gender"	=> "m",
+                "name"	    => "Russell",
+                "language"  => "en-AU",
+            ],
+            2   => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Nicole",
+                "language"  => "en-AU",
+            ],
+            3   => [
+                "preferred" => true,
+                "gender"	=> "m",
+                "name"	    => "Brian",
+                "language"	=> "en-GB",
+            ],
+            4   => [
+                "preferred" => true,
+                "gender"	=> "f",
+                "name"      => "Amy",
+                "language"	=> "en-GB",
+            ],
+            5   => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Emma",
+                "language"  => "en-GB",
+            ],
+            6   => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Aditi",
+                "language"  => "en-IN",
+            ],
+            7   => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Raveena",
+                "language"  => "en-IN",
+            ],
+            8   => [
+                "preferred" => false,
+                "gender"	=> "m",
+                "name"	    => "Joey",
+                "language"  => "en-US",
+            ],
+            9   => [
+                "preferred" => false,
+                "gender"	=> "m",
+                "name"	    => "Justin",
+                "language"  => "en-US",
+            ],
+            10  => [
+                "preferred" => true,
+                "gender"	=> "m",
+                "name"	    => "Matthew",
+                "language"  => "en-US",
+            ],
+            11  => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Ivy",
+                "language"  => "en-US",
+            ],
+            12  => [
+                "preferred" => true,
+                "gender"	=> "f",
+                "name"	    => "Joanna",
+                "language"  => "en-US",
+            ],
+            13  => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Kendra",
+                "language"  => "en-US",
+            ],
+            14  => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Kimberly",
+                "language"  => "en-US",
+            ],
+            15  => [
+                "preferred" => false,
+                "gender"	=> "f",
+                "name"	    => "Salli",
+                "language"  => "en-US",
+            ],
+            16  => [
+                "preferred" => false,
+                "gender"	=> "m",
+                "name"	    => "Geraint",
+                "language"  => "en-GB-WLS",
+            ],
+        ];
+    }
+
 }

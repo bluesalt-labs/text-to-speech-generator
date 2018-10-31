@@ -9,7 +9,16 @@ define('VIEW_ROOT', DOC_ROOT.'views'.DIRECTORY_SEPARATOR);
 // Load Composer dependencies
 require_once DOC_ROOT.'vendor/autoload.php';
 
+// Initiate Environment variable helper
+$dotenv = new Dotenv\Dotenv(DOC_ROOT);
+$dotenv->load();
 
+if (! function_exists('env')) {
+    function env($key, $default = null) {
+        $value = getenv($key);
+        return ($value ? $value : $default);
+    }
+}
 
 // Define core models
 require_once APP_ROOT.'Route.php';
@@ -27,10 +36,9 @@ foreach (array_diff(scandir($helpersRoot), array('..', '.')) as $filename) {
 
 // Define the application
 require_once APP_ROOT.'App.php';
-// Initiate the application
-$dotenv = new Dotenv\Dotenv(DOC_ROOT);
-$dotenv->load();
 
+
+// Initiate the application
 $GLOBALS['app'] = new App\App();
 
 // Load helper functions

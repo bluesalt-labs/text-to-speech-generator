@@ -12,12 +12,6 @@ if (! function_exists('request')) {
     }
 }
 
-if (! function_exists('env')) {
-    function env($key, $default = null) {
-        return app()->getEnvironmentVariable($key, $default);
-    }
-}
-
 if (! function_exists('resource')) {
     function resource($file, $subDir = null) {
         // if no sub-directory is specified,

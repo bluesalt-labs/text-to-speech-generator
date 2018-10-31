@@ -2,31 +2,32 @@
 
 namespace App;
 
-use Dotenv\Dotenv;
-
 class App
 {
     protected $sessionKey;
-    protected $dotenv;
-
     protected $request;
     protected $controller;
+    public $jobWorker;
     public $response;
 
+    /**
+     * App constructor.
+     */
     public function __construct() {
         $this->request = new Request();
         $this->controller = new Controller();
         $this->response = new Response();
 
         $this->getOrCreateSessionKey();
+
+        $this->jobWorker = new Helpers\JobWorker();
     }
 
-    public function getEnvironmentVariable($key, $default = null) {
-        $value = getenv($key);
-
-        return ($value ? $value : $default);
-    }
-
+    /**
+     * Handles an incoming HTTP request
+     *
+     * @return Controller
+     */
     public function handleRequest() {
         $action = $this->request->getControllerAction();
 
@@ -38,28 +39,33 @@ class App
 
     }
 
-   ////public function handleRequestWithData($type, $requestData) {
+    /**
+     * Get the status of the JobWorker
+     * @param $jobID
+     * @return array
+     */
+    public function getJobStatus($jobID) {
+        return $this->jobWorker->getStatus($jobID);
+    }
 
-   //    switch($type) {
-   //        case 'POST':
-   //            $method = strtolower( $requestData->method );
+    /**
+     * Submit a new JobWorker request
+     *
+     * @param $text
+     * @param $voice
+     * @param bool $useSSML
+     * @return array
+     */
+    public function submitJobRequest($text, $voice, $useSSML = true) {
+        return $this->jobWorker->start($this->sessionKey, $text, $voice, $useSSML);
+    }
 
-   //            switch($method) {
-   //                case 'tts':
-   //                    $this->handleTTSRequest($requestData);
-   //                    break;
-   //                default:
-   //                    $this->data['messages'][] = "'$method' '$type' requests not implemented.";
-   //            }
-   //            break;
-   //        default:
-   //            $this->data['messages'][] = "'".$type."' requests with data not implemented (yet...).";
-   //    }
-
-   //    exit( json_encode($this->data) );
-   //}
-
-
+    /**
+     * Generates a new session key on App init.
+     *
+     * @param int $length
+     * @return string
+     */
     private function getOrCreateSessionKey($length = 12) {
         if($this->request->attributes('session_key')) {
             return $this->request->attributes('session_key');
@@ -76,23 +82,38 @@ class App
         return $this->sessionKey = $key;
     }
 
+    /**
+     * Get the current session key.
+     *
+     * @return string
+     */
     public function getSessionKey() {
         return $this->sessionKey;
     }
 
-    private function loadDotenv() {
-        $this->dotenv = new Dotenv(DOC_ROOT);
-        $this->dotenv->load();
-    }
-
+    /**
+     * Get available voices from the TextToSpeech helper class.
+     *
+     * @return array
+     */
     public function getVoices() {
-        return Helpers\TextToSpeech::getVoices();
+        return Helpers\TextToSpeech::getAvailableVoices();
     }
 
+    /**
+     * Get SSML replacements array from the TextToSpeech helper class.
+     *
+     * @return array
+     */
     public function getSSMLReplacements() {
-        return Helpers\TextToSpeech::getSSML();
+        return Helpers\TextToSpeech::getSSMLReplacements();
     }
 
+    /**
+     * * Get max characters per request from the TextToSpeech helper class.
+     *
+     * @return int
+     */
     public function getMaxCharacters() {
         return Helpers\TextToSpeech::getMaxCharacters();
     }
