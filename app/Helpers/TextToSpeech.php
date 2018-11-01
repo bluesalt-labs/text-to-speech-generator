@@ -21,7 +21,7 @@ class TextToSpeech
      * @param $requestData - ['text_type', 'output_format', 'text', 'voice_key']
      * @return array
      */
-    public function sendRequest($requestData) {
+    public function sendRequest($requestData, $textIsClean = false) {
         $output = [
             'success'       => false,
             'response_data' => null,
@@ -39,13 +39,12 @@ class TextToSpeech
         }
 
         try {
+            $processedText = ($textIsClean ? $requestData['text'] : static::cleanString($requestData['text']) );
             $type   = $requestData['text_type'];
             $format = $requestData['output_format'];
 
             if($type === 'ssml') {
                 $processedText = '<speak>'.static::processSSMLReplacements($requestData['text']).'</speak>';
-            } else {
-                $processedText = $requestData['text'];
             }
 
             $voice = static::getVoiceNameByKey($requestData['voice_key']);
@@ -183,12 +182,18 @@ class TextToSpeech
 
     //**************** TextToSpeech Internal Helper Functions ****************//
 
-    private static function processSSMLReplacements($text) {
+    public static function cleanString($text) {
+        return strip_tags(preg_replace(array("/:|<\/(li|p)>/","/&#?[a-z0-9]+;/i"), array(",", ''), trim($text)));
+    }
+
+    private static function textToSSML($text) {
         $cleanString = $text;
 
         foreach(static::getSSMLReplacements() as $acronym => $replacement) {
             $cleanString = str_replace($acronym, $replacement, $cleanString);
         }
+
+        return "'<speak><amazon:auto-breaths duration=\"short\">".$cleanString."</amazon:auto-breaths></speak>'";
 
         return $cleanString;
     }

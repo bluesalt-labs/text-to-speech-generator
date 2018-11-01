@@ -35,6 +35,9 @@ class TextCacher
             return $output;
         }
 
+        // Clean the input text before processing
+        $text = TextToSpeech::cleanString($text);
+
         $maxChars = TextToSpeech::getMaxCharacters();
         $maxLoops = 10000;
         $fileNum  = 1;

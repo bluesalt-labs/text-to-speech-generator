@@ -118,7 +118,7 @@ class AudioCacher
         ];
 
         // send TTS request
-        $ttsResponseData = $tts->sendRequest($ttsSettings);
+        $ttsResponseData = $tts->sendRequest($ttsSettings, true);
 
         // todo: is this right?
 
